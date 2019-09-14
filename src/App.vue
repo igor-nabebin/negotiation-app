@@ -1,29 +1,87 @@
 <template>
   <div id="app">
-    <div id="nav">
-      <router-link to="/">Home</router-link> |
-      <router-link to="/about">About</router-link>
+    <MainNavigation />
+    <router-view class="tab-window" />
+    <div v-if="isModalVisible" class="modal-container">
+      <ComparisonResultModal
+        data-testid="modal-component"
+        :minSalary="minSalary"
+        :maxSalary="maxSalary"
+        :temperature="temperature"
+        @resetSalaries="resetSalaries"
+      />
     </div>
-    <router-view />
   </div>
 </template>
 
+<script>
+import ComparisonResultModal from "@/components/ComparisonResultModal";
+import MainNavigation from "@/components/MainNavigation";
+import { mapState } from "vuex";
+import { getWeatherByCityName } from "@/api/weather";
+
+export default {
+  name: "NegotiationApp",
+  components: { MainNavigation, ComparisonResultModal },
+  data: () => ({
+    temperature: null
+  }),
+  watch: {
+    isModalVisible: {
+      async handler(value) {
+        if (value) {
+          const weatherObj = await getWeatherByCityName("London");
+          this.temperature = weatherObj.main.temp;
+        }
+      },
+      immediate: true
+    }
+  },
+  computed: {
+    ...mapState(["minSalary", "maxSalary"]),
+    isModalVisible() {
+      return this.minSalary !== null && this.maxSalary !== null;
+    }
+  },
+  methods: {
+    resetSalaries() {
+      this.$store.dispatch("resetSalaries");
+    }
+  }
+};
+</script>
+
 <style lang="scss">
+body {
+  margin: 0;
+}
 #app {
   font-family: "Avenir", Helvetica, Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
   text-align: center;
   color: #2c3e50;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
 }
-#nav {
-  padding: 30px;
-  a {
-    font-weight: bold;
-    color: #2c3e50;
-    &.router-link-exact-active {
-      color: #42b983;
-    }
+.tab-window {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.modal-container {
+  position: fixed;
+  z-index: 100;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.5);
+  & > * {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
   }
 }
 </style>
